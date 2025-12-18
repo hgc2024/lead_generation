@@ -20,13 +20,49 @@ def load_data():
         raise FileNotFoundError(f"Dataset not found at {DATA_PATH}")
     return pd.read_csv(DATA_PATH)
 
+def engineer_features(df):
+    df = df.copy()
+    
+    # 1. High Intent Tags (Domain Knowledge)
+    high_intent_tags = ['Will revert after reading the email', 'Closed by Horizzon', 'Lost to EINS', 'Interested in other courses']
+    # Handle NaN for Tags safely
+    df['Tags'] = df['Tags'].fillna('Unknown')
+    df['Has_High_Intent_Tag'] = df['Tags'].apply(lambda x: 1 if x in high_intent_tags else 0)
+    
+    # 2. Activity Score (Heuristic)
+    activity_scores = {
+        'SMS Sent': 10,
+        'Email Opened': 8,
+        'Page Visited on Website': 6,
+        'Olark Chat Conversation': 5,
+        'Converted to Lead': 4,
+        'Email Bounced': -2,
+        'Unreachable': -2
+    }
+    # Handle NaN for Last Activity safely
+    df['Last Activity'] = df['Last Activity'].fillna('Unknown')
+    df['Activity_Score'] = df['Last Activity'].map(activity_scores).fillna(0)
+    
+    # 3. Interaction: Time * Activity Score
+    # Ensure Total Time is numeric
+    df['Total Time Spent on Website'] = pd.to_numeric(df['Total Time Spent on Website'], errors='coerce').fillna(0)
+    df['Time_Activity_Interaction'] = df['Total Time Spent on Website'] * df['Activity_Score']
+    
+    return df
+
 def train_model(test_size=0.2, random_state=42):
     global current_model
     
     df = load_data()
     
-    # Columns to use
-    features = ['Lead Origin', 'Lead Source', 'Total Time Spent on Website', 'Last Activity', 'Tags']
+    # Apply Feature Engineering
+    df = engineer_features(df)
+    
+    # Updated Base Features + Engineered Features
+    base_features = ['Lead Origin', 'Lead Source', 'Total Time Spent on Website', 'Last Activity', 'Tags']
+    fe_features = ['Has_High_Intent_Tag', 'Activity_Score', 'Time_Activity_Interaction']
+    
+    features = base_features + fe_features
     target = 'Converted'
     
     # Basic Cleaning
@@ -34,7 +70,7 @@ def train_model(test_size=0.2, random_state=42):
     y = df[target]
     
     # Preprocessing Pipeline
-    numeric_features = ['Total Time Spent on Website']
+    numeric_features = ['Total Time Spent on Website'] + fe_features
     categorical_features = ['Lead Origin', 'Lead Source', 'Last Activity', 'Tags']
     
     numeric_transformer = SimpleImputer(strategy='median')
@@ -93,6 +129,10 @@ def predict_lead_proba(lead_data: dict):
         train_model()
         
     df = pd.DataFrame([lead_data])
+    
+    # Apply FE for inference
+    df = engineer_features(df)
+    
     proba = current_model.predict_proba(df)[0][1] # Probability of Class 1 (Converted)
     return proba
 

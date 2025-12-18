@@ -10,7 +10,8 @@ if not exist "venv" (
 )
 call venv\Scripts\activate
 echo Installing Backend Requirements...
-pip install -r backend/requirements.txt --quiet
+pip install -r backend/requirements.txt
+pip install lightgbm --quiet
 
 echo ===================================================
 echo [2/3] Setting up React Frontend Environment...
