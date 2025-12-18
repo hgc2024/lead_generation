@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from lightgbm import LGBMClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -51,7 +51,7 @@ def train_model(test_size=0.2, random_state=42):
         ])
     
     clf = Pipeline(steps=[('preprocessor', preprocessor),
-                          ('classifier', RandomForestClassifier(random_state=random_state))])
+                          ('classifier', LGBMClassifier(random_state=random_state))])
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     
@@ -66,6 +66,10 @@ def train_model(test_size=0.2, random_state=42):
     # Accessing the classifier step
     model = clf.named_steps['classifier']
     importances = model.feature_importances_
+    
+    # Normalize importances so they sum to 1
+    if importances.sum() > 0:
+        importances = importances / importances.sum()
     
     # Accessing feature names from preprocessor
     onehot_columns = clf.named_steps['preprocessor'].named_transformers_['cat'].named_steps['onehot'].get_feature_names_out(categorical_features)
