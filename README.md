@@ -11,15 +11,15 @@ The system simulates a Western Digital sales environment, recommending products 
     *   Outputs a conversion probability score for each lead.
     *   Identifies key drivers of conversion (Feature Importance).
 2.  **RAG-Based Email Generation (Phase B)**:
-    *   **retrieval**: Matches lead profiles to specific products in the Western Digital catalog.
-    *   **Generation**: Uses **Google Gemini Pro** (via LangChain) to draft highly personalized sales emails referencing the lead's specific interests and the matched product's unique value proposition.
+    *   **Retrieval**: Matches lead profiles to specific products in the Western Digital catalog.
+    *   **Generation**: Uses **Ollama (Mistral)** (via LangChain) to draft highly personalized sales emails referencing the lead's specific interests and the matched product's unique value proposition.
 3.  **ROI Analysis (Phase C)**:
     *   Calculates the estimated cost savings of using AI for email drafting compared to manual SDR efforts.
 
 ## Technology Stack
 *   **Backend**: Python, FastAPI
 *   **Machine Learning**: Scikit-Learn, Pandas
-*   **Generative AI**: LangChain, Google Gemini API
+*   **Generative AI**: LangChain, Ollama (Mistral)
 *   **Frontend**: React, Vite, Recharts, Lucide React
 *   **Styling**: Vanilla CSS (Dark Mode / Glassmorphism)
 
@@ -48,19 +48,18 @@ lead_generation/
 ### Prerequisites
 *   **Python 3.9+**
 *   **Node.js 16+**
-*   **Google Gemini API Key**: Required for email generation.
+*   **Ollama**:
+    1.  Download and install from [ollama.com](https://ollama.com).
+    2.  Open a terminal and run: `ollama pull mistral`.
+    3.  Ensure Ollama is running in the background.
 
 ### Installation & Running
 1.  **Clone/Open the Repository**.
-2.  **Set API Key**:
-    *   Set the `GEMINI_API_KEY` environment variable in your terminal.
-    *   *(Windows Powershell)*: `$env:GEMINI_API_KEY="your_api_key_here"`
-    *   *(Command Prompt)*: `set GEMINI_API_KEY=your_api_key_here`
-3.  **Run the Application**:
+2.  **Run the Application**:
     *   Double-click `run_project.bat` (or run it from the terminal).
     *   This script will automatically:
         *   Create a Python virtual environment (`venv`).
-        *   Install all Backend dependencies.
+        *   Install all Backend dependencies (including `langchain-ollama`).
         *   Install all Frontend node modules.
         *   Launch the **Backend (Port 8000)** and **Frontend (Port 5173)**.
 
@@ -68,7 +67,11 @@ lead_generation/
 1.  Open your browser to `http://localhost:5173`.
 2.  **Dashboard**: View the list of leads sorted by "Conversion Probability".
 3.  **Analytics**: Check the "Top Drivers of Conversion" chart to see what influences sales.
-4.  **Generate Email**: Click **"Draft Email"** on any lead to see the RAG agent in action.
+4.  **Generate Email**: Click **"Draft Email"** on any lead. The backend will invoke your local Ollama instance to generate the text.
+
+## Troubleshooting
+*   **"Error generation email"**: Check if Ollama is running (`ollama serve` or check system tray) and if you have pulled the model (`ollama list` should show `mistral`).
+*   **Frontend Error**: If you see "Failed to resolve import", try deleting `frontend/node_modules` and running `run_project.bat` again, or `cd frontend` and run `npm install`.
 
 ## License
 MIT

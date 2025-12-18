@@ -32,5 +32,9 @@ echo Starting Frontend on Port 5173...
 start "Frontend" cmd /k "cd frontend && npm run dev"
 
 echo Done! Browser should open shortly at http://localhost:5173
-echo Please ensure you have set GEMINI_API_KEY if you want to generate emails.
+echo.
+echo [IMPORTANT] OLLAMA CHECK:
+echo Ensure you have Ollama installed and have pulled the model by running:
+echo "ollama pull mistral"
+echo in a separate terminal window functionality.
 pause

@@ -1,5 +1,5 @@
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
@@ -21,12 +21,6 @@ CATALOG_TEXT = """
    - Ideal For: Photographers, Videographers, Content Creators on the go.
    - Key Features: Thunderbolt 3, USB-C, Enterprise-class Ultrastar drive inside.
 """
-
-# Simple Retrieval Logic (Keyword based for prototype to remove heavy dependencies like ChromaDB if not needed, 
-# but valid RAG usually uses embeddings. Given user requirements for "RAG", I will implement a lightweight vector search or just a smart prompt selection 
-# if embeddings are too heavy. Actually, let's use a simple heuristic "Retrieval" since the catalog is tiny (3 items).
-# A full vector store for 3 items is overkill and prone to setup errors with environment keys. 
-# I will implement a "Keyword/Rule Based Retriever" that mimics RAG behavior effectively for this scale.)
 
 def retrieve_product(lead_profile: dict) -> str:
     """
@@ -52,13 +46,14 @@ def retrieve_product(lead_profile: dict) -> str:
 
 def generate_email_content(lead_profile: dict, product_name: str, product_details: str):
     """
-    Generates an email using an LLM.
+    Generates an email using Ollama (Mistral).
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return "Error: GEMINI_API_KEY environment variable not set. Please set it to generate emails."
-
-    llm = ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=api_key)
+    # Initialize Ollama Chat Model
+    # Assumes Ollama is running locally on default port 11434
+    try:
+        llm = ChatOllama(model="mistral")
+    except Exception as e:
+        return f"Error initializing Ollama: {str(e)}. Ensure Ollama is installed and running."
     
     template = """
     You are a professional B2B Sales Representative for Western Digital.
@@ -85,15 +80,17 @@ def generate_email_content(lead_profile: dict, product_name: str, product_detail
     prompt = PromptTemplate.from_template(template)
     chain = prompt | llm | StrOutputParser()
     
-    response = chain.invoke({
-        "time_on_site": lead_profile.get('Total Time Spent on Website', 0),
-        "source": lead_profile.get('Lead Source', 'Website'),
-        "tags": lead_profile.get('Tags', 'General Interest'),
-        "product_name": product_name,
-        "product_details": product_details
-    })
-    
-    return response
+    try:
+        response = chain.invoke({
+            "time_on_site": lead_profile.get('Total Time Spent on Website', 0),
+            "source": lead_profile.get('Lead Source', 'Website'),
+            "tags": lead_profile.get('Tags', 'General Interest'),
+            "product_name": product_name,
+            "product_details": product_details
+        })
+        return response
+    except Exception as e:
+        return f"Error generation email: {str(e)}. Is the 'mistral' model pulled? Run 'ollama pull mistral'."
 
 def get_product_details(product_name):
     # Retrieve full details text from the catalog string
